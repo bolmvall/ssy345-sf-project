@@ -1,4 +1,6 @@
 %% Initialization
+addpath('./src')
+addpath('.log')
 clear 
 clc
 close all
@@ -9,8 +11,8 @@ showIP()
 % save xhat
 % save meas
 %% Load data
-load S7_steady
-% load LG4_steady
+%load S7_steady
+ load LG4_steady
 
 %% Plot some results
 %Calculate mean of sensor data
@@ -32,7 +34,7 @@ cov_vec = {cov_acc,cov_gyr,cov_mag};
 to_plot = {meas.acc-mu_acc, meas.gyr-mu_gyr, meas.mag-mu_mag};
 sensor = {'Acc','Gyr','Mag'};
 ax = {'x','y','z'};
-%% Generate plots of data
+%% Generate Histogram plots
 % For each sensor
 for i=1:3
     figure(i), hold on 
@@ -47,4 +49,17 @@ end
 % ,'BinLimits',[cov_vec{i}(1,j) cov_vec{i}(1,j)]
 
 
-
+%% Generate time plots of data
+% For each sensor
+for i=1:3
+    figure(i), hold on 
+    % For each axis
+    for j=1:3
+        subplot(3,1,j)
+        plot(meas.t,to_plot{i})
+        title(ax{j})
+    end
+    suptitle(sensor{i})
+end
+%%
+saveas(gca,'./plots/fig','epsc')
