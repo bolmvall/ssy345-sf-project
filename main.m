@@ -12,9 +12,10 @@ showIP()
 % save meas
 %% Load data
 %load S7_steady
- load LG4_steady
+load LG4_steady
 
-%% Plot some results
+
+%% Calculate mean and covarian
 %Calculate mean of sensor data
 mu_acc = mean(meas.acc(:,~any(isnan(meas.acc),1)),2);
 mu_gyr = mean(meas.gyr(:,~any(isnan(meas.gyr),1)),2);
@@ -27,26 +28,33 @@ for i=1:3
     cov_mag(i) = cov(meas.mag(i,~any(isnan(meas.mag),1)));
 end
 
-%%
-% to_plot = {meas.acc, meas.gyr, meas.mag};
-% mu_vec = {mu_acc, mu_gyr, mu_mag};
+%% Generate plots of data
+
+%Set latex as default interpreter
+set(groot, 'DefaultTextInterpreter', 'latex')
+set(groot, 'DefaultLegendInterpreter', 'latex')
+
+%Parameters for plotting
 cov_vec = {cov_acc,cov_gyr,cov_mag};
 to_plot = {meas.acc-mu_acc, meas.gyr-mu_gyr, meas.mag-mu_mag};
-sensor = {'Acc','Gyr','Mag'};
+sensor = {'Accelorometer','Gyroscope','Magnetometer'};
 ax = {'x','y','z'};
+
 %% Generate Histogram plots
 % For each sensor
+bins = [100,100,20];
+
+% Plot for each sensor
 for i=1:3
     figure(i), hold on 
     % For each axis
     for j=1:3
-        subplot(1,3,j)
-        histogram(to_plot{i}(j,:),100, 'Normalization', 'pdf')
+        subplot(3,1,j)
+        histogram(to_plot{i}(j,:), bins(i), 'Normalization', 'pdf')
         title(ax{j})
     end
-    suptitle(sensor{i})
+    suptitle(['Histograms of ',sensor{i}, ' data'])
 end
-% ,'BinLimits',[cov_vec{i}(1,j) cov_vec{i}(1,j)]
 
 
 %% Generate time plots of data
