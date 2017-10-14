@@ -7,13 +7,14 @@ close all
 startup()
 showIP()
 %% Collect data
-% [xhat, meas] = filterTemplate();
+[xhat, meas] = filterTemplate();
 % save xhat
 % save meas
 %% Load data
 %load S7_steady
-load LG4_steady
+%load LG4_steady
 
+[xhat, meas] = filterTemplate2();
 
 %% Calculate mean and covarian
 %Calculate mean of sensor data
