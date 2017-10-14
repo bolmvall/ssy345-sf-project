@@ -26,11 +26,17 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
   %% Filter settings
   t0 = [];  % Initial time (initialize on first data received)
   nx = 4;   % Assuming that you use q as state variable.
-  % Add your filter settings here.
+  
+  %%%%%%% Add your filter settings here. %%%%%%%%
   Rw = diag([1 1 1])./1000;
-  T = 1/100;
   Ra = diag([1 1 1])./1000;
   g0 = [0 -0.45 9.7]';
+  Rm = diag([1 1 1])./10;
+  m0 = [0 23 -43]';
+  magOut = 1;
+  accOut = 1;
+  alpha = 0.001;
+  Lk = norm(m0);
   
   % Current filter state.
   x = [1; 0; 0 ;0];
@@ -67,7 +73,8 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
       % within the next 5 ms are concurrent (suitable for sampling
       % in 100Hz).
       data = server.getNext(5);
-    
+      disp(data(2:10))
+      
       if isnan(data(1))  % No new data received
         continue;        % Skips the rest of the look
       end
@@ -80,8 +87,14 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
       acc = data(1, 2:4)';
       if ~any(isnan(acc))  % Acc measurements are available.
         % Do something
-        [x, P] = mu_g(x, P, acc, Ra, g0);
-        [x, P] = mu_normalizeQ(x,P);
+        if norm(acc)<9.81*1.2
+            [x, P] = mu_g(x, P, acc, Ra, g0);
+            [x, P] = mu_normalizeQ(x,P);
+            accOut = 0;
+        else
+            accOut = 1;
+        end
+        
       end
       gyr = data(1, 5:7)';
       if ~any(isnan(gyr))  % Gyro measurements are available.
@@ -93,13 +106,23 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
       mag = data(1, 8:10)';
       if ~any(isnan(mag))  % Mag measurements are available.
         % Do something
+        Lk = (1-alpha)*Lk + alpha*norm(mag);
+        if norm(mag) < Lk*1.1
+            %mag = [0 norm(mag(1:2)) mag(3)]';
+            [x, P] = mu_m(x, P, mag, m0, Rm);
+            [x, P] = mu_normalizeQ(x,P);
+            magOut = 0;
+        else
+            magOut = 1;
+        end
       end
 
       orientation = data(1, 18:21)';  % Google's orientation estimate.
-
       % Visualize result
       if rem(counter, 10) == 0
         setOrientation(ownView, x(1:4));
+        ownView.setAccDist(accOut);
+        ownView.setMagDist(magOut);
         title(ownView, 'OWN', 'FontSize', 16);
         if ~any(isnan(orientation))
           if isempty(googleView)

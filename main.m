@@ -1,22 +1,27 @@
 %% Initialization
-addpath('./src')
-addpath('.log')
 clear 
 clc
 close all
+
+% Add paths to source and log files
+addpath('./src')
+addpath('./log')
+
+% Startup procedure
 startup()
 showIP()
-%% Collect data
+%% Collect data using original filter
 [xhat, meas] = filterTemplate();
 % save xhat
 % save meas
-%% Load data
+%% Collect data using modified filter
+[xhat, meas] = filterTemplate2();
+
+%% Load datafile if necessary
 %load S7_steady
 %load LG4_steady
 
-[xhat, meas] = filterTemplate2();
-
-%% Calculate mean and covarian
+%% Calculate mean and covariance
 %Calculate mean of sensor data
 mu_acc = mean(meas.acc(:,~any(isnan(meas.acc),1)),2);
 mu_gyr = mean(meas.gyr(:,~any(isnan(meas.gyr),1)),2);
@@ -29,8 +34,7 @@ for i=1:3
     cov_mag(i) = cov(meas.mag(i,~any(isnan(meas.mag),1)));
 end
 
-%% Generate plots of data
-
+%% Setup figure parameters
 %Set latex as default interpreter
 set(groot, 'DefaultTextInterpreter', 'latex')
 set(groot, 'DefaultLegendInterpreter', 'latex')
@@ -42,7 +46,8 @@ sensor = {'Accelorometer','Gyroscope','Magnetometer'};
 ax = {'x','y','z'};
 
 %% Generate Histogram plots
-% For each sensor
+close all
+% Bins
 bins = [100,100,20];
 
 % Plot for each sensor
@@ -57,18 +62,17 @@ for i=1:3
     suptitle(['Histograms of ',sensor{i}, ' data'])
 end
 
-
 %% Generate time plots of data
 % For each sensor
 for i=1:3
-    figure(i), hold on 
-    % For each axis
-    for j=1:3
-        subplot(3,1,j)
-        plot(meas.t,to_plot{i})
-        title(ax{j})
-    end
-    suptitle(sensor{i})
+    subplot(3,1,i)  
+    % For all axes
+    plot(meas.t,to_plot{i})
+    hold on
+    legend(ax)
+    title(sensor{i}),xlabel('$t$')
+    ylim([-1 1])
+    box on ,hold off
 end
 %%
 saveas(gca,'./plots/fig','epsc')
