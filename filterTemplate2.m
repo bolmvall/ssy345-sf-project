@@ -28,11 +28,11 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
   nx = 4;   % Assuming that you use q as state variable.
   
   %%%%%%% Add your filter settings here. %%%%%%%%
-  Rw = diag([1 1 1])./1000;
-  Ra = diag([1 1 1])./1000;
-  g0 = [0 -0.45 9.7]';
-  Rm = diag([1 1 1])./10;
-  m0 = [0 23 -43]';
+  Rw = diag([1 1 1])./1000000;
+  Ra = diag([1 1 1])./10000;
+  g0 = [0 0 9.8]';
+  Rm = diag([1 1 1])./4;
+  m0 = [0 17.5 -45]';
   magOut = 1;
   accOut = 1;
   alpha = 0.001;
@@ -73,7 +73,6 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
       % within the next 5 ms are concurrent (suitable for sampling
       % in 100Hz).
       data = server.getNext(5);
-      disp(data(2:10))
       
       if isnan(data(1))  % No new data received
         continue;        % Skips the rest of the look
@@ -83,7 +82,14 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
       if isempty(t0)  % Initialize t0
         t0 = t;
       end
-
+      
+      gyr = data(1, 5:7)';
+      if ~any(isnan(gyr))  % Gyro measurements are available.
+        % Do something
+        [x, P] = tu_qw(x, P, gyr, t-t0-meas.t(end), Rw);
+        [x, P] = mu_normalizeQ(x,P);
+      end
+      
       acc = data(1, 2:4)';
       if ~any(isnan(acc))  % Acc measurements are available.
         % Do something
@@ -93,22 +99,14 @@ function [xhat, meas] = filterTemplate2(calAcc, calGyr, calMag)
             accOut = 0;
         else
             accOut = 1;
-        end
-        
+        end       
       end
-      gyr = data(1, 5:7)';
-      if ~any(isnan(gyr))  % Gyro measurements are available.
-        % Do something
-        [x, P] = tu_qw(x, P, gyr, t-t0-meas.t(end), Rw);
-        [x, P] = mu_normalizeQ(x,P);
-      end
-
+      
       mag = data(1, 8:10)';
       if ~any(isnan(mag))  % Mag measurements are available.
         % Do something
         Lk = (1-alpha)*Lk + alpha*norm(mag);
         if norm(mag) < Lk*1.1
-            %mag = [0 norm(mag(1:2)) mag(3)]';
             [x, P] = mu_m(x, P, mag, m0, Rm);
             [x, P] = mu_normalizeQ(x,P);
             magOut = 0;
