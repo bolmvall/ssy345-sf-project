@@ -27,7 +27,7 @@ import('com.liu.sensordata.*');  % Used to receive data.
 t0 = [];  % Initial time (initialize on first data received)
 nx = 4;   % Assuming that you use q as state variable.
 
-%%%%%%% Add your filter settings here. %%%%%%%%
+%%%%%%% Filter settings %%%%%%%%
 % S7 Calibration matrices
 Rw = diag([2.285e-06 1.231e-06 1.729e-06]);
 Ra = diag([9.946e-05 1.163e-04 5.608e-05]);
@@ -35,6 +35,7 @@ Rm = diag([0.152 0.0658 0.309]);
 g0 = [-0.040 0.189 9.823]'; 
 m0 = [0 17.517 -48.080]';
 
+% Other parameters
 magOut = 1;
 accOut = 1;
 alpha = 0.001;
@@ -87,17 +88,17 @@ try
         
         gyr = data(1, 5:7)';
         if ~any(isnan(gyr))  % Gyro measurements are available.
-            % Do something
-            [x, P] = tu_qw(x, P, gyr, t-t0-meas.t(end), Rw);
-            [x, P] = mu_normalizeQ(x,P);
+            [x, P] = tu_qw(x, P, gyr, t-t0-meas.t(end), Rw); % Update state estimate
+            [x, P] = mu_normalizeQ(x,P); % Normalize state vector
         end
 
         acc = data(1, 2:4)';
         if ~any(isnan(acc))  % Acc measurements are available.
-            % Do something
-            if  norm(acc)<9.81*1.2 && norm(acc)>9.81*0.8
-                [x, P] = mu_g(x, P, acc, Ra, g0);
-                [x, P] = mu_normalizeQ(x,P);
+            % If the 2-norm for acc measurement is to large/small, skip
+            % update step
+            if  norm(acc)<9.81*1.25 && norm(acc)>9.81*0.75
+                [x, P] = mu_g(x, P, acc, Ra, g0); % Update state estimate
+                [x, P] = mu_normalizeQ(x,P); % Normalize state vector
                 accOut = 0;
             else
                 accOut = 1;
@@ -106,11 +107,13 @@ try
 
         mag = data(1, 8:10)';
         if ~any(isnan(mag))  % Mag measurements are available.
-            % Do something
+            % AR-filter to account for that the magnitude of m0 might drift
             Lk = (1-alpha)*Lk + alpha*norm(mag);
+            
+            % If magnitude of measurement is too large, skip update step
             if norm(mag) < Lk*1.1
-                [x, P] = mu_m(x, P, mag, m0, Rm);
-                [x, P] = mu_normalizeQ(x,P);
+                [x, P] = mu_m(x, P, mag, m0, Rm); % Update state estimate
+                [x, P] = mu_normalizeQ(x,P); % Normalize state vector
                 magOut = 0;
             else
                 magOut = 1;
@@ -121,7 +124,7 @@ try
         % Visualize result
         if rem(counter, 10) == 0
             setOrientation(ownView, x(1:4));
-            ownView.setAccDist(accOut);
+            ownView.setAccDist(accOut); % Display
             ownView.setMagDist(magOut);
             title(ownView, 'OWN', 'FontSize', 16);
             if ~any(isnan(orientation))
