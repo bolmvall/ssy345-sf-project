@@ -124,7 +124,7 @@ try
         % Visualize result
         if rem(counter, 10) == 0
             setOrientation(ownView, x(1:4));
-            ownView.setAccDist(accOut); % Display
+            ownView.setAccDist(accOut);
             ownView.setMagDist(magOut);
             title(ownView, 'OWN', 'FontSize', 16);
             if ~any(isnan(orientation))
