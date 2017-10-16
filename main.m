@@ -14,9 +14,6 @@ showIP()
 [xhat, meas] = filterTemplate();
 % save xhat
 % save meas
-%% Collect data using modified filter
-[xhat, meas] = filterTemplate2();
-
 %% Load datafile if necessary
 %load S7_steady
 %load LG4_steady
@@ -74,5 +71,19 @@ for i=1:3
     ylim([-1 1])
     box on ,hold off
 end
-%%
+
+%% Collect data using modified filter
+[xhat, meas] = filterTemplate2();
+
+%% Plot euler angles
+euler_filter = q2euler(xhat.x);
+euler_phone = q2euler(meas.orient);
+
+for i=1:size(euler_filter,1)
+    subplot(3,1,i),hold on
+    plot(xhat.t,(euler_filter(i,:)))
+    plot(xhat.t,(euler_phone(i,:)))
+end
+
+%% Save plot
 saveas(gca,'./plots/fig','epsc')
