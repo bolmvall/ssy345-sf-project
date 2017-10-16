@@ -1,7 +1,5 @@
 %% Initialization
-clear 
-clc
-close all
+clear, clc, close all
 
 % Add paths to source and log files
 addpath('./src')
@@ -15,7 +13,7 @@ showIP()
 % save xhat
 % save meas
 %% Load datafile if necessary
-%load S7_steady
+load S7_steady
 %load LG4_steady
 
 %% Calculate mean and covariance
@@ -35,6 +33,7 @@ end
 %Set latex as default interpreter
 set(groot, 'DefaultTextInterpreter', 'latex')
 set(groot, 'DefaultLegendInterpreter', 'latex')
+set(groot,'DefaultAxesFontSize',12)
 
 %Parameters for plotting
 cov_vec = {cov_acc,cov_gyr,cov_mag};
@@ -45,32 +44,61 @@ ax = {'x','y','z'};
 %% Generate Histogram plots
 close all
 % Bins
-bins = [100,100,20];
+bins = [100,100,100];
+% Set plot paramters
+xlimits = [0.04, 6e-3, 2];
+ylimits = [600 1600 1000];
+cm = colormap(lines);
 
 % Plot for each sensor
 for i=1:3
-    figure(i), hold on 
+    figure(i)
     % For each axis
     for j=1:3
         subplot(3,1,j)
-        histogram(to_plot{i}(j,:), bins(i), 'Normalization', 'pdf')
-        title(ax{j})
+        % Plot histogram
+        h = histogram(to_plot{i}(j,:), bins(i),'Normalization','count','FaceAlpha',1,'FaceColor',cm(j,:));
+        
+        % Set figure properties
+        legend(['$' ax{j} '$'])
+        xlim([-xlimits(i) xlimits(i)]),ylim([0 ylimits(i)])
+        
+        % Add title on first subplot
+        if j==1
+            title(['$Histograms \ of \ ' sensor{i} '$'])
+        end
+        % Add ylabel on mid subplot
+        if j==2
+            ylabel('$Count$')
+        end
     end
-    suptitle(['Histograms of ',sensor{i}, ' data'])
+    % Save image
+    saveas(gca,['./fig/hist-' sensor{i}],'epsc')
 end
 
 %% Generate time plots of data
 % For each sensor
 for i=1:3
     subplot(3,1,i)  
-    % For all axes
+    % All axes
     plot(meas.t,to_plot{i})
-    hold on
-    legend(ax)
-    title(sensor{i}),xlabel('$t$')
-    ylim([-1 1])
-    box on ,hold off
+    % Add title
+    title(['$' sensor{i} '$']),box on
+    % Add legend in first subplot
+    if i==1
+        legend(['$' ax{1} '$'],['$' ax{2} '$'],['$' ax{3} '$'])
+    end
+    % Add ylabel on mid subplot
+    if i==2
+        ylabel('$Sensor \ value$','FontSize',15)
+    end
+    % Add xlabel on last subplot
+    if i==3
+        xlabel('$t$','FontSize',15)
+    end
 end
+% Save figure
+saveas(gca,['./fig/time-agm'],'epsc')
 
 %% Collect data using modified filter
 [xhat, meas] = filterTemplate2();
@@ -80,10 +108,24 @@ euler_filter = q2euler(xhat.x);
 euler_phone = q2euler(meas.orient);
 
 for i=1:size(euler_filter,1)
-    subplot(3,1,i),hold on
-    plot(xhat.t,(euler_filter(i,:)))
-    plot(xhat.t,(euler_phone(i,:)))
+    subplot(3,1,i),box on
+    plot(xhat.t,(euler_filter(i,:)),'-','Color',cm(i,:))
+    hold on
+    plot(xhat.t,(euler_phone(i,:)),'k--')
+    legend(['$' ax{i} '_{f}$'],['$' ax{i} '_{g}$'],'Location','NorthEast')
+    
+    % Add title on top subplokt
+    if i==1
+        title(['$Angle \ comparison \ - \ Filter \ vs \ Google$'])
+    end
+    % Add ylabel on mid subplot
+    if i==2
+        ylabel('$rad$')
+    end
+    % Add xlabel on last subplot
+    if i==3
+        xlabel('$t$')
+    end
+    hold off
 end
-
-%% Save plot
-saveas(gca,'./plots/fig','epsc')
+saveas(gca,'./fig/comparison','epsc')
