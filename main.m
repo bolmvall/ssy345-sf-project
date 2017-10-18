@@ -71,9 +71,12 @@ for i=1:3
         if j==2
             ylabel('$Count$')
         end
+        if j==3
+            xlabel('$Deviation \ from \ mean$')
+        end
     end
     % Save image
-    %saveas(gca,['./fig/hist-' sensor{i}],'epsc')
+    saveas(gca,['./fig/hist-' sensor{i}],'epsc')
 end
 
 %% Generate time plots of data

@@ -38,7 +38,7 @@ m0 = [0 17.517 -48.080]';
 % Other parameters
 magOut = 1;
 accOut = 1;
-alpha = 0.001;
+alpha = 0.01;
 Lk = norm(m0);
 
 % Current filter state.
@@ -90,6 +90,9 @@ try
         if ~any(isnan(gyr))  % Gyro measurements are available.
             [x, P] = tu_qw(x, P, gyr, t-t0-meas.t(end), Rw); % Update state estimate
             [x, P] = mu_normalizeQ(x,P); % Normalize state vector
+        else
+            % If no measurements are available assume random walk model
+            P = P + 0.001*eye(4);
         end
 
         acc = data(1, 2:4)';
@@ -111,7 +114,7 @@ try
             Lk = (1-alpha)*Lk + alpha*norm(mag);
             
             % If magnitude of measurement is too large, skip update step
-            if norm(mag) < Lk*1.1
+            if 35<Lk && Lk<55 % Thresholds for magnetic field 
                 [x, P] = mu_m(x, P, mag, m0, Rm); % Update state estimate
                 [x, P] = mu_normalizeQ(x,P); % Normalize state vector
                 magOut = 0;
